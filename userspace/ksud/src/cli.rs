@@ -42,6 +42,9 @@ enum Commands {
         magiskboot: Option<PathBuf>,
     },
 
+    /// Unload KernelSU Next kernel module (LKM Only)
+    Unload,
+
     /// Uninstall KernelSU Next modules and itself(LKM Only)
     Uninstall {
         /// magiskboot path, if not specified, will search from $PATH
@@ -545,6 +548,7 @@ pub fn run() -> Result<()> {
             }
         }
         Commands::Install { magiskboot } => utils::install(magiskboot),
+        Commands::Unload => crate::unload::unload(),
         Commands::Uninstall { magiskboot } => utils::uninstall(magiskboot),
         Commands::Sepolicy { command } => match command {
             Sepolicy::Patch { sepolicy } => crate::sepolicy::live_patch(&sepolicy),
@@ -553,6 +557,10 @@ pub fn run() -> Result<()> {
         },
         Commands::LateLoad => crate::late_load::run(),
         Commands::Services => {
+            if ksucalls::get_version() <= 0 {
+                info!("KernelSU Next not available, exiting services");
+                std::process::exit(0);
+            }
             init_event::on_services();
             Ok(())
         }
